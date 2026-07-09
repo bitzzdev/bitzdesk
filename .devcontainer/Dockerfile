@@ -20,7 +20,7 @@ RUN apt-get update && \
         gnupg \
         mesa-utils \
         libgl1-mesa-dri \
-        libgl1-mesa-glx \
+        libgl1 \
         fonts-dejavu \
         unzip \
         zip && \
