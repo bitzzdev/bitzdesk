@@ -56,13 +56,36 @@ touch "$HOME/.Xauthority"
 # Check dependencies
 ########################################
 
+# Ensure Mozilla APT repo is present for Firefox
+if ! [ -f /etc/apt/sources.list.d/mozilla.list ]; then
+    echo "Configuring Mozilla APT repository..."
+    sudo install -d -m 0755 /etc/apt/keyrings
+    wget -q https://packages.mozilla.org/apt/repo-signing-key.gpg -O- | sudo tee /etc/apt/keyrings/packages.mozilla.org.asc > /dev/null
+    echo "deb [signed-by=/etc/apt/keyrings/packages.mozilla.org.asc] https://packages.mozilla.org/apt mozilla main" | sudo tee /etc/apt/sources.list.d/mozilla.list > /dev/null
+    echo -e 'Package: *\nPin: origin packages.mozilla.org\nPin-Priority: 1000' | sudo tee /etc/apt/preferences.d/mozilla > /dev/null
+    sudo apt-get update
+fi
+
+# Ensure Brave APT repo is present
+if ! [ -f /etc/apt/sources.list.d/brave-browser-release.list ]; then
+    echo "Configuring Brave APT repository..."
+    sudo curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg
+    echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main" | sudo tee /etc/apt/sources.list.d/brave-browser-release.list > /dev/null
+    sudo apt-get update
+fi
+
 for BIN in Xvfb x11vnc startxfce4 dbus-launch firefox brave-browser
 do
     if ! command -v "$BIN" >/dev/null 2>&1; then
         echo -e "${RED}Missing $BIN — attempting installation...${NC}"
-        sudo apt-get update && sudo apt-get install -y "$BIN" || {
-            echo -e "${RED}Failed to install $BIN${NC}"
-            exit 1
+        # Map binary names to package names if different
+        PKG="$BIN"
+        [ "$BIN" == "brave-browser" ] || [ "$BIN" == "brave" ] && PKG="brave-browser"
+        
+        sudo apt-get install -y "$PKG" || {
+            echo -e "${RED}Failed to install $PKG${NC}"
+            # Don't exit 1 for browsers, just warn
+            [ "$BIN" == "firefox" ] || [ "$BIN" == "brave-browser" ] || exit 1
         }
     fi
 done

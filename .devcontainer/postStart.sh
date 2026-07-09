@@ -84,5 +84,15 @@ BASHRC_HOOK
     echo "✓ SSH → VNC auto-start hook installed in ~/.bashrc"
 fi
 
+# ──────────────────────────────────────────
+# Auto-start VNC server on Codespace startup
+# ──────────────────────────────────────────
+if ! ss -ltn 2>/dev/null | grep -q ":5901"; then
+    echo "Starting VNC server..."
+    bitzdesk start >/tmp/bitzdesk-startup-vnc.log 2>&1 &
+    disown
+    echo "✓ VNC server started in background"
+fi
+
 echo
 echo "✓ Startup checks completed"
