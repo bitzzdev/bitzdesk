@@ -26,7 +26,8 @@ rm -f /tmp/.X1-lock /tmp/.X11-unix/X1 2>/dev/null || true
 vncserver :1 \
     -geometry 1920x1080 \
     -depth 24 \
-    -localhost yes
+    -localhost yes \
+    -PasswordFile "$HOME/.vnc/passwd"
 
 echo
 echo "Waiting for desktop..."
