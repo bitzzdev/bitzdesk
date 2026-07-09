@@ -14,10 +14,15 @@ mkdir -p "$HOME/.local/bin"
 mkdir -p "$HOME/.local/share/applications"
 mkdir -p "$HOME/.vnc"
 
-grep -qxF 'export PATH="$HOME/bin:$HOME/.local/bin:$PATH"' "$HOME/.bashrc" || \
-echo 'export PATH="$HOME/bin:$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
+# Ensure /usr/local/bin is in PATH and add local bin paths
+for shell_rc in "$HOME/.bashrc" "$HOME/.zshrc"; do
+    if [ -f "$shell_rc" ]; then
+        grep -qxF 'export PATH="/usr/local/bin:$HOME/bin:$HOME/.local/bin:$PATH"' "$shell_rc" || \
+        echo 'export PATH="/usr/local/bin:$HOME/bin:$HOME/.local/bin:$PATH"' >> "$shell_rc"
+    fi
+done
 
-export PATH="$HOME/bin:$HOME/.local/bin:$PATH"
+export PATH="/usr/local/bin:$HOME/bin:$HOME/.local/bin:$PATH"
 
 echo
 echo "[1/7] Installing AI CLIs..."
@@ -67,11 +72,15 @@ echo "[7/7] Running health check..."
 bash "$SCRIPT_DIR/scripts/healthcheck.sh" || true
 
 echo
-echo "Installing BitzDesk CLI..."
+echo "Installing BitzDesk CLI globally..."
 
-install -Dm755 \
+sudo install -Dm755 \
 "$SCRIPT_DIR/scripts/bitzdesk" \
-"$HOME/bin/bitzdesk"
+"/usr/local/bin/bitzdesk"
+
+# Symlink for redundancy
+mkdir -p "$HOME/bin"
+ln -sf "/usr/local/bin/bitzdesk" "$HOME/bin/bitzdesk"
 
 echo
 echo "========================================"

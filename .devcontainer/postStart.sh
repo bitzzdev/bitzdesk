@@ -10,10 +10,15 @@ echo "========================================"
 mkdir -p "$HOME/bin"
 mkdir -p "$HOME/.vnc"
 
-grep -qxF 'export PATH="$HOME/bin:$HOME/.local/bin:$PATH"' "$HOME/.bashrc" || \
-echo 'export PATH="$HOME/bin:$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
+# Ensure /usr/local/bin is in PATH and add local bin paths
+for shell_rc in "$HOME/.bashrc" "$HOME/.zshrc"; do
+    if [ -f "$shell_rc" ]; then
+        grep -qxF 'export PATH="/usr/local/bin:$HOME/bin:$HOME/.local/bin:$PATH"' "$shell_rc" || \
+        echo 'export PATH="/usr/local/bin:$HOME/bin:$HOME/.local/bin:$PATH"' >> "$shell_rc"
+    fi
+done
 
-export PATH="$HOME/bin:$HOME/.local/bin:$PATH"
+export PATH="/usr/local/bin:$HOME/bin:$HOME/.local/bin:$PATH"
 
 if [ ! -f "$HOME/.vnc/xstartup" ]; then
     bash "$SCRIPT_DIR/scripts/setup-vnc.sh"
@@ -34,29 +39,28 @@ EOF
 chmod +x "$HOME/bin/desktop"
 fi
 
-if [ ! -f "$HOME/bin/bitzdesk" ]; then
-    echo "Installing BitzDesk CLI..."
-    install -Dm755 \
-        "$SCRIPT_DIR/scripts/bitzdesk" \
-        "$HOME/bin/bitzdesk"
+# Ensure bitzdesk CLI is installed globally
+if [ ! -f "/usr/local/bin/bitzdesk" ]; then
+    echo "Installing BitzDesk CLI globally..."
+    sudo install -Dm755 "$SCRIPT_DIR/scripts/bitzdesk" "/usr/local/bin/bitzdesk"
     echo "✓ BitzDesk CLI installed"
 fi
 
+# Ensure symlink in user bin for legacy compatibility
+mkdir -p "$HOME/bin"
+ln -sf "/usr/local/bin/bitzdesk" "$HOME/bin/bitzdesk"
+
 bash "$SCRIPT_DIR/scripts/patch-brave.sh" >/dev/null 2>&1 || true
 
-# ──────────────────────────────────────────
-# Health check — run bitzdesk doctor
-# If doctor reports failures, run bitzdesk setup
-# ──────────────────────────────────────────
+# Always run bitzdesk setup to ensure everything is installed/updated
+echo "Running bitzdesk setup..."
+bitzdesk setup || true
+
 echo
 echo "Running bitzdesk doctor..."
-if ! "$HOME/bin/bitzdesk" doctor; then
+if ! bitzdesk doctor; then
     echo
-    echo "⚠  Doctor reported issues — running bitzdesk setup..."
-    "$HOME/bin/bitzdesk" setup || true
-    echo
-    echo "Re-running bitzdesk doctor after setup..."
-    "$HOME/bin/bitzdesk" doctor || true
+    echo "⚠  Doctor still reported issues after setup."
 fi
 
 # ──────────────────────────────────────────
@@ -72,6 +76,8 @@ if ! grep -qF "$VNC_HOOK_MARKER" "$HOME/.bashrc"; then
 # Auto-start VNC when connecting via SSH (interactive sessions only)
 if [ -n "${SSH_CONNECTION:-}" ] && [ -z "${BITZDESK_VNC_STARTED:-}" ]; then
     export BITZDESK_VNC_STARTED=1
+    # Refresh PATH in case it was just updated
+    export PATH="/usr/local/bin:$HOME/bin:$HOME/.local/bin:$PATH"
     if ! ss -ltn 2>/dev/null | grep -q ":5901"; then
         echo "[bitzdesk] Starting VNC desktop..."
         bash "$HOME/bin/desktop" >/tmp/bitzdesk-vnc-autostart.log 2>&1 &
