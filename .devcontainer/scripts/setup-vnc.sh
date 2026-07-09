@@ -45,6 +45,28 @@ printf "bitzdesk\nbitzdesk\nn\n" | vncpasswd >/dev/null
 chmod 600 "$HOME/.vnc/passwd"
 fi
 
+echo
+echo "Configuring VNC password..."
+
+mkdir -p "$HOME/.vnc"
+
+if [ ! -f "$HOME/.vnc/passwd" ]; then
+    echo
+    echo "No VNC password found."
+    echo "Please create one now."
+    echo
+
+    vncpasswd
+
+    chmod 600 "$HOME/.vnc/passwd"
+
+    echo
+    echo "✓ Password saved."
+else
+    echo "✓ Existing VNC password found."
+fi
+
+
 ########################################
 # xstartup
 ########################################
