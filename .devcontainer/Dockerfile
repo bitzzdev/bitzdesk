@@ -30,7 +30,7 @@ RUN apt-get update && \
     install -d -m 0755 /etc/apt/keyrings && \
     wget -q https://packages.mozilla.org/apt/repo-signing-key.gpg -O- | tee /etc/apt/keyrings/packages.mozilla.org.asc > /dev/null && \
     echo "deb [signed-by=/etc/apt/keyrings/packages.mozilla.org.asc] https://packages.mozilla.org/apt mozilla main" | tee /etc/apt/sources.list.d/mozilla.list > /dev/null && \
-    echo 'Package: *\nPin: origin packages.mozilla.org\nPin-Priority: 1000' | tee /etc/apt/preferences.d/mozilla > /dev/null && \
+    printf 'Package: *\nPin: origin packages.mozilla.org\nPin-Priority: 1000\n' | tee /etc/apt/preferences.d/mozilla > /dev/null && \
     # ──────────────────────────────────────────
     # Brave Browser
     # ──────────────────────────────────────────
@@ -51,11 +51,12 @@ RUN apt-get update && \
 # ──────────────────────────────────────────
 # Bake BitzDesk CLI into the image
 # ──────────────────────────────────────────
-COPY .devcontainer/scripts/bitzdesk /usr/local/bin/bitzdesk
+# Note: The context is the .devcontainer folder
+COPY scripts/bitzdesk /usr/local/bin/bitzdesk
 RUN chmod +x /usr/local/bin/bitzdesk
 
 # ──────────────────────────────────────────
 # Global PATH configuration
 # ──────────────────────────────────────────
 RUN echo 'export PATH="/usr/local/bin:$HOME/bin:$HOME/.local/bin:$PATH"' >> /etc/bash.bashrc && \
-    echo 'export PATH="/usr/local/bin:$HOME/bin:$HOME/.local/bin:$PATH"' >> /etc/zsh/zshrc || true
+    (mkdir -p /etc/zsh && echo 'export PATH="/usr/local/bin:$HOME/bin:$HOME/.local/bin:$PATH"' >> /etc/zsh/zshrc || true)

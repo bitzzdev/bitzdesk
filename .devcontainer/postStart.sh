@@ -89,7 +89,8 @@ fi
 # ──────────────────────────────────────────
 if ! ss -ltn 2>/dev/null | grep -q ":5901"; then
     echo "Starting VNC server..."
-    bitzdesk start >/tmp/bitzdesk-startup-vnc.log 2>&1 &
+    # Use absolute path to ensure it works even if PATH is being refreshed
+    /usr/local/bin/bitzdesk start >/tmp/bitzdesk-startup-vnc.log 2>&1 &
     disown
     echo "✓ VNC server started in background"
 fi
