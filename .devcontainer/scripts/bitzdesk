@@ -1,0 +1,133 @@
+#!/bin/bash
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+banner() {
+echo -e "${BLUE}"
+echo "=========================================="
+echo "              BitzDesk CLI"
+echo "=========================================="
+echo -e "${NC}"
+}
+
+usage() {
+banner
+cat <<EOT
+
+Usage:
+
+bitzdesk setup
+bitzdesk doctor
+bitzdesk start
+bitzdesk stop
+bitzdesk restart
+bitzdesk tunnel
+bitzdesk update
+bitzdesk status
+bitzdesk logs
+bitzdesk brave
+
+EOT
+}
+
+case "$1" in
+
+setup)
+
+bash "$SCRIPT_DIR/setup-vnc.sh"
+bash "$SCRIPT_DIR/install-ai-tools.sh"
+bash "$SCRIPT_DIR/patch-brave.sh"
+;;
+
+doctor)
+
+bash "$SCRIPT_DIR/healthcheck.sh"
+;;
+
+start)
+
+bash "$SCRIPT_DIR/setup-vnc.sh"
+bash "$SCRIPT_DIR/start-vnc.sh"
+;;
+
+stop)
+
+bash "$SCRIPT_DIR/stop-vnc.sh"
+;;
+
+restart)
+
+bash "$SCRIPT_DIR/stop-vnc.sh"
+sleep 2
+bash "$SCRIPT_DIR/start-vnc.sh"
+;;
+
+tunnel)
+
+bash "$SCRIPT_DIR/tunnel.sh"
+;;
+
+update)
+
+echo
+echo "Updating AI tools..."
+
+npm update -g @openai/codex || true
+npm update -g @google/gemini-cli || true
+
+curl -fsSL https://opencode.ai/install | bash || true
+
+curl -fsSL https://antigravity.google/cli/install.sh | bash || true
+
+echo
+echo "Finished."
+;;
+
+status)
+
+echo
+
+echo "===== VNC ====="
+
+vncserver -list || true
+
+echo
+
+echo "===== Port ====="
+
+ss -ltn | grep 5901 || true
+
+echo
+
+echo "===== Processes ====="
+
+ps aux | grep Xtigervnc | grep -v grep || true
+
+;;
+
+logs)
+
+tail -100 ~/.vnc/*.log
+
+;;
+
+brave)
+
+brave
+
+;;
+
+*)
+
+usage
+
+;;
+
+esac
