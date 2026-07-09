@@ -47,3 +47,15 @@ RUN apt-get update && \
         brave-browser && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
+
+# ──────────────────────────────────────────
+# Bake BitzDesk CLI into the image
+# ──────────────────────────────────────────
+COPY .devcontainer/scripts/bitzdesk /usr/local/bin/bitzdesk
+RUN chmod +x /usr/local/bin/bitzdesk
+
+# ──────────────────────────────────────────
+# Global PATH configuration
+# ──────────────────────────────────────────
+RUN echo 'export PATH="/usr/local/bin:$HOME/bin:$HOME/.local/bin:$PATH"' >> /etc/bash.bashrc && \
+    echo 'export PATH="/usr/local/bin:$HOME/bin:$HOME/.local/bin:$PATH"' >> /etc/zsh/zshrc || true

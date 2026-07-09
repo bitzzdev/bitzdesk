@@ -10,14 +10,7 @@ echo "========================================"
 mkdir -p "$HOME/bin"
 mkdir -p "$HOME/.vnc"
 
-# Ensure /usr/local/bin is in PATH and add local bin paths
-for shell_rc in "$HOME/.bashrc" "$HOME/.zshrc"; do
-    if [ -f "$shell_rc" ]; then
-        grep -qxF 'export PATH="/usr/local/bin:$HOME/bin:$HOME/.local/bin:$PATH"' "$shell_rc" || \
-        echo 'export PATH="/usr/local/bin:$HOME/bin:$HOME/.local/bin:$PATH"' >> "$shell_rc"
-    fi
-done
-
+# Paths are now handled globally in /etc/bash.bashrc and /etc/zsh/zshrc
 export PATH="/usr/local/bin:$HOME/bin:$HOME/.local/bin:$PATH"
 
 if [ ! -f "$HOME/.vnc/xstartup" ]; then
@@ -39,13 +32,7 @@ EOF
 chmod +x "$HOME/bin/desktop"
 fi
 
-# Ensure bitzdesk CLI is installed globally
-if [ ! -f "/usr/local/bin/bitzdesk" ]; then
-    echo "Installing BitzDesk CLI globally..."
-    sudo install -Dm755 "$SCRIPT_DIR/scripts/bitzdesk" "/usr/local/bin/bitzdesk"
-    echo "✓ BitzDesk CLI installed"
-fi
-
+# CLI is now pre-installed in the Dockerfile
 # Ensure symlink in user bin for legacy compatibility
 mkdir -p "$HOME/bin"
 ln -sf "/usr/local/bin/bitzdesk" "$HOME/bin/bitzdesk"
