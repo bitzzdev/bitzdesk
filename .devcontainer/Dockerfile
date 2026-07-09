@@ -24,11 +24,26 @@ RUN apt-get update && \
         fonts-dejavu \
         unzip \
         zip && \
+    # ──────────────────────────────────────────
+    # Firefox (Mozilla APT Repository)
+    # ──────────────────────────────────────────
+    install -d -m 0755 /etc/apt/keyrings && \
+    wget -q https://packages.mozilla.org/apt/repo-signing-key.gpg -O- | tee /etc/apt/keyrings/packages.mozilla.org.asc > /dev/null && \
+    echo "deb [signed-by=/etc/apt/keyrings/packages.mozilla.org.asc] https://packages.mozilla.org/apt mozilla main" | tee /etc/apt/sources.list.d/mozilla.list > /dev/null && \
+    echo 'Package: *\nPin: origin packages.mozilla.org\nPin-Priority: 1000' | tee /etc/apt/preferences.d/mozilla > /dev/null && \
+    # ──────────────────────────────────────────
+    # Brave Browser
+    # ──────────────────────────────────────────
     curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg \
         https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg && \
     echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main" \
         > /etc/apt/sources.list.d/brave-browser-release.list && \
+    # ──────────────────────────────────────────
+    # Install Browsers
+    # ──────────────────────────────────────────
     apt-get update && \
-    apt-get install -y brave-browser && \
+    apt-get install -y \
+        firefox \
+        brave-browser && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*

@@ -92,6 +92,12 @@ check_cmd gh "GitHub CLI"
 # Browsers
 ########################################
 
+if command -v firefox >/dev/null 2>&1; then
+    ok "Firefox"
+else
+    bad "Firefox"
+fi
+
 if command -v brave >/dev/null 2>&1 || command -v brave-browser >/dev/null 2>&1; then
     ok "Brave Browser"
 else

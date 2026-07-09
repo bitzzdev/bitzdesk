@@ -56,12 +56,15 @@ touch "$HOME/.Xauthority"
 # Check dependencies
 ########################################
 
-for BIN in Xvfb x11vnc startxfce4 dbus-launch
+for BIN in Xvfb x11vnc startxfce4 dbus-launch firefox brave-browser
 do
-    command -v "$BIN" >/dev/null || {
-        echo -e "${RED}Missing $BIN${NC}"
-        exit 1
-    }
+    if ! command -v "$BIN" >/dev/null 2>&1; then
+        echo -e "${RED}Missing $BIN — attempting installation...${NC}"
+        sudo apt-get update && sudo apt-get install -y "$BIN" || {
+            echo -e "${RED}Failed to install $BIN${NC}"
+            exit 1
+        }
+    fi
 done
 
 echo

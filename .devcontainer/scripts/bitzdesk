@@ -39,6 +39,7 @@ Usage:
   bitzdesk status
   bitzdesk logs
   bitzdesk brave
+  bitzdesk firefox
 
 EOF
 }
@@ -130,6 +131,14 @@ brave)
         brave-browser
     else
         echo "Brave Browser is not installed."
+    fi
+    ;;
+
+firefox)
+    if command -v firefox >/dev/null 2>&1; then
+        firefox
+    else
+        echo "Firefox is not installed."
     fi
     ;;
 
