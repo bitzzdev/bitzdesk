@@ -5,62 +5,48 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 bash "$SCRIPT_DIR/setup-vnc.sh"
 
-echo
-echo "========================================"
-echo " Starting TigerVNC"
-echo "========================================"
-echo
-
-# Already running?
-if pgrep -x Xtigervnc >/dev/null 2>&1; then
-    echo "TigerVNC is already running."
-    echo
-    vncserver -list
-    exit 0
-fi
-
-# Clean stale lock files
-rm -f /tmp/.X1-lock /tmp/.X11-unix/X1 2>/dev/null || true
-
-# Start VNC
-vncserver :1 \
-    -geometry 1920x1080 \
-    -depth 24 \
-    -localhost yes \
-    -PasswordFile "$HOME/.vnc/passwd"
+export DISPLAY=:1
+export XDG_RUNTIME_DIR="/tmp/runtime-$USER"
 
 echo
-echo "Waiting for desktop..."
+echo "Starting Xvfb..."
 
-sleep 3
+Xvfb :1 \
+-screen 0 1920x1080x24 \
+-ac \
++extension GLX \
++render \
+-noreset &
 
-if pgrep -x Xtigervnc >/dev/null 2>&1; then
+sleep 2
 
-    echo
-    echo "========================================"
-    echo " ✓ BitzDesk Desktop Ready"
-    echo "========================================"
-    echo
+echo
+echo "Starting XFCE..."
 
-    vncserver -list
+dbus-launch --exit-with-session startxfce4 >/tmp/xfce.log 2>&1 &
 
-    echo
-    echo "Display :1"
-    echo "Port    :5901"
-    echo
-    echo "From Termux:"
-    echo
-    echo "    bitzdesk tunnel"
-    echo
-    exit 0
-fi
+sleep 5
+
+echo
+echo "Starting x11vnc..."
+
+x11vnc \
+-display :1 \
+-rfbauth "$HOME/.vnc/passwd" \
+-forever \
+-shared \
+-rfbport 5901 \
+-bg
 
 echo
 echo "========================================"
-echo " ✗ TigerVNC failed"
-echo "========================================"
+echo "Desktop Ready"
 echo
-
-find "$HOME/.vnc" -name "*.log" -exec tail -100 {} \;
-
-exit 1
+echo "Display :1"
+echo "Port    :5901"
+echo
+echo "Run:"
+echo
+echo "bitzdesk tunnel"
+echo
+echo "========================================"
