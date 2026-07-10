@@ -2,8 +2,7 @@
   "name": "BitzDesk",
 
   "build": {
-    "dockerfile": "Dockerfile",
-    "context": ".."
+    "dockerfile": "Dockerfile"
   },
 
   "features": {

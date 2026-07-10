@@ -65,7 +65,9 @@ echo "[7/7] Running health check..."
 bash "$SCRIPT_DIR/scripts/healthcheck.sh" || true
 
 echo
-# CLI is now pre-installed in the Dockerfile
+echo "Installing BitzDesk CLI..."
+sudo install -Dm755 "$SCRIPT_DIR/scripts/bitzdesk" "/usr/local/bin/bitzdesk"
+
 # Ensure symlink in user bin for legacy compatibility
 mkdir -p "$HOME/bin"
 ln -sf "/usr/local/bin/bitzdesk" "$HOME/bin/bitzdesk"
