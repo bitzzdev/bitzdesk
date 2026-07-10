@@ -51,8 +51,8 @@ RUN apt-get update && \
 # ──────────────────────────────────────────
 # Bake BitzDesk CLI into the image
 # ──────────────────────────────────────────
-# Note: The context is the .devcontainer folder
-COPY scripts/bitzdesk /usr/local/bin/bitzdesk
+# Path relative to context (repo root)
+COPY .devcontainer/scripts/bitzdesk /usr/local/bin/bitzdesk
 RUN chmod +x /usr/local/bin/bitzdesk
 
 # ──────────────────────────────────────────
