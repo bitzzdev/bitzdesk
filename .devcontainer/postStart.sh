@@ -2,98 +2,71 @@
 set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export PATH="/usr/local/bin:$HOME/bin:$HOME/.local/bin:$PATH"
 
 echo "========================================"
 echo " BitzDesk Startup"
 echo "========================================"
 
+# Ensure directories exist
 mkdir -p "$HOME/bin"
 mkdir -p "$HOME/.vnc"
 
-# Paths are now handled globally in /etc/bash.bashrc and /etc/zsh/zshrc
-export PATH="/usr/local/bin:$HOME/bin:$HOME/.local/bin:$PATH"
-
-if [ ! -f "$HOME/.vnc/xstartup" ]; then
-    bash "$SCRIPT_DIR/scripts/setup-vnc.sh"
-    echo "✓ Recreated xstartup"
+# Ensure bitzdesk is in the PATH for this session
+if [ -f "/usr/local/bin/bitzdesk" ]; then
+    BITZDESK="/usr/local/bin/bitzdesk"
+elif [ -f "$SCRIPT_DIR/scripts/bitzdesk" ]; then
+    BITZDESK="$SCRIPT_DIR/scripts/bitzdesk"
+    sudo install -Dm755 "$BITZDESK" "/usr/local/bin/bitzdesk" || true
+else
+    echo "⚠  bitzdesk CLI not found!"
+    exit 1
 fi
 
-if [ ! -f "$HOME/.vnc/passwd" ]; then
-    mkdir -p "$HOME/.vnc"
-    printf "bitzdesk\nbitzdesk\nn\n" | vncpasswd >/dev/null
-    echo "✓ Created VNC password"
-fi
-
+# Ensure desktop command is present
 if [ ! -f "$HOME/bin/desktop" ]; then
-cat > "$HOME/bin/desktop" <<EOF
+    cat > "$HOME/bin/desktop" <<EOF
 #!/usr/bin/env bash
 exec bash "$SCRIPT_DIR/scripts/start-vnc.sh"
 EOF
-chmod +x "$HOME/bin/desktop"
+    chmod +x "$HOME/bin/desktop"
 fi
 
-# CLI is now pre-installed in the Dockerfile
-# Ensure symlink in user bin for legacy compatibility
-mkdir -p "$HOME/bin"
-ln -sf "/usr/local/bin/bitzdesk" "$HOME/bin/bitzdesk"
+# Run setup (includes Firefox/Brave installation)
+echo "Running bitzdesk setup..."
+"$BITZDESK" setup || true
 
+# Patch browsers
 bash "$SCRIPT_DIR/scripts/patch-brave.sh" >/dev/null 2>&1 || true
 
-# Always run bitzdesk setup to ensure everything is installed/updated
-echo "Running bitzdesk setup..."
-bitzdesk setup || true
-
-echo
-echo "Running bitzdesk doctor..."
-if ! bitzdesk doctor; then
-    echo
-    echo "⚠  Doctor still reported issues after setup."
+# Start VNC in background
+if ! ss -ltn 2>/dev/null | grep -q ":5901"; then
+    echo "Starting VNC server..."
+    "$BITZDESK" start >/tmp/bitzdesk-startup-vnc.log 2>&1 &
+    disown
 fi
 
-# ──────────────────────────────────────────
-# Install SSH → VNC auto-start hook
-# Injects a snippet into ~/.bashrc that starts VNC
-# automatically whenever an interactive SSH session opens.
-# ──────────────────────────────────────────
+# Run doctor
+echo "Running bitzdesk doctor..."
+"$BITZDESK" doctor || true
+
+# SSH hook
 VNC_HOOK_MARKER="# bitzdesk-vnc-autostart"
 if ! grep -qF "$VNC_HOOK_MARKER" "$HOME/.bashrc"; then
     cat >> "$HOME/.bashrc" <<'BASHRC_HOOK'
 
 # bitzdesk-vnc-autostart
-# Auto-start VNC when connecting via SSH (interactive sessions only)
 if [ -n "${SSH_CONNECTION:-}" ] && [ -z "${BITZDESK_VNC_STARTED:-}" ]; then
     export BITZDESK_VNC_STARTED=1
-    # Refresh PATH in case it was just updated
     export PATH="/usr/local/bin:$HOME/bin:$HOME/.local/bin:$PATH"
     if ! ss -ltn 2>/dev/null | grep -q ":5901"; then
         echo "[bitzdesk] Starting VNC desktop..."
-        bash "$HOME/bin/desktop" >/tmp/bitzdesk-vnc-autostart.log 2>&1 &
+        /home/vscode/bin/desktop >/tmp/bitzdesk-vnc-autostart.log 2>&1 &
         disown
-        sleep 3
-        if ss -ltn 2>/dev/null | grep -q ":5901"; then
-            echo "[bitzdesk] ✓ VNC is running on port 5901"
-            echo "[bitzdesk]   Run: bitzdesk tunnel"
-        else
-            echo "[bitzdesk] ⚠  VNC may still be starting — check: tail -f /tmp/bitzdesk-vnc-autostart.log"
-        fi
-    else
-        echo "[bitzdesk] ✓ VNC already running on port 5901"
+        sleep 2
     fi
 fi
 BASHRC_HOOK
-    echo "✓ SSH → VNC auto-start hook installed in ~/.bashrc"
 fi
 
-# ──────────────────────────────────────────
-# Auto-start VNC server on Codespace startup
-# ──────────────────────────────────────────
-if ! ss -ltn 2>/dev/null | grep -q ":5901"; then
-    echo "Starting VNC server..."
-    # Use absolute path to ensure it works even if PATH is being refreshed
-    /usr/local/bin/bitzdesk start >/tmp/bitzdesk-startup-vnc.log 2>&1 &
-    disown
-    echo "✓ VNC server started in background"
-fi
-
-echo
-echo "✓ Startup checks completed"
+echo "✓ Startup completed"
